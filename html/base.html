@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Fira+Mono" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="{{ baseurl }}/css/normalize.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="{{ baseurl }}/css/skeleton.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="{{ baseurl }}/css/main.css" media="screen">
+  </head>
+
+  <body>
+    <section class="container markdown-body">
+      <nav id="main">
+        {% for link in links %}
+          <a href="{{ baseurl }}/{{ link.href }}">{{ link.title }}</a>
+        {% endfor %}
+      </nav>
+
+      {% block content %}
+        {{ content | markdown }}
+      {% endblock %}
+
+      {% if pages and pages | length > 1 %}
+        <nav id="pagination">
+          {% for page in pages %}
+            {% if page.href == current_page %}
+              <span class="current">{{ page.title }}</span>
+            {% else %}
+              <a href="{{ baseurl }}/{{ page.href }}">{{ page.title }}</a>
+            {% endif %}
+          {% endfor %}
+        </nav>
+      {% endif %}
+    </section>
+  </body>
+</html>

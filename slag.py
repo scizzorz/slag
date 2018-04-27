@@ -1,0 +1,171 @@
+from datetime import datetime
+import attr
+import jinja2
+import markdown2
+import os
+import pygit2 as git
+import sys
+
+env = jinja2.Environment(
+  loader=jinja2.FileSystemLoader('html'),
+  autoescape=jinja2.select_autoescape(['html', 'xml']),
+)
+
+
+def markdown_filter(src):
+  return markdown2.markdown(src)
+
+
+def datetime_filter(src, fmt='%b %e, %I:%M%P'):
+  if isinstance(src, int):
+    src = datetime.fromtimestamp(src)
+
+  return src.strftime(fmt)
+
+
+env.filters['markdown'] = markdown_filter
+env.filters['datetime'] = datetime_filter
+
+
+def pager(iterable, page_size):
+    page = []
+    for i, item in enumerate(iterable):
+        page.append(item)
+        if ((i + 1) % page_size) == 0:
+            yield page
+            page = []
+    yield page
+
+
+@attr.s
+class Post:
+  repo = attr.ib()
+  title = attr.ib()
+  body = attr.ib()
+  intro = attr.ib()
+  time = attr.ib()
+  author = attr.ib()
+  hash = attr.ib()
+
+
+@attr.s
+class Link:
+  title = attr.ib()
+  href = attr.ib()
+
+
+def render(name, *args, **kwargs):
+  temp = env.get_template(name)
+  return temp.render(*args, **kwargs)
+
+
+def find_posts(path='.'):
+  repo = git.Repository(git.discover_repository(path))
+
+  last = repo[repo.head.target]
+  posts = []
+  for commit in repo.walk(last.id, git.GIT_SORT_TIME):
+    paras = commit.message.split('\n\n')
+    title = paras[0]
+    intro = ''
+    body = ''
+
+    if len(paras) > 1:
+      intro = paras[1]
+      body = '\n\n'.join(paras[1:])
+
+    posts.append(Post(
+      title=title,
+      intro=intro,
+      body=body,
+      author=commit.author,
+      time=commit.commit_time,
+      repo=os.path.basename(os.path.abspath(path)),
+      hash=commit.hex,
+    ))
+
+  return posts
+
+
+def render_list(filename, **kwargs):
+  with open(filename, 'w') as fp:
+    fp.write(render(
+      'list.html',
+      **kwargs,
+    ))
+
+
+def render_all(paths=['.'], page_size=16):
+  links = []
+  repos = {}
+  all_posts = []
+
+  links.append(Link(
+    title='/',
+    href='index.html',
+  ))
+
+  for path in paths:
+    posts = find_posts(path)
+    name = os.path.basename(os.path.abspath(path))
+    repos[name] = posts
+    all_posts.extend(posts)
+    links.append(Link(
+      title=f'/{name}',
+      href=f'{name}.html',
+    ))
+
+  all_posts.sort(key=lambda x: x.time, reverse=True)
+
+  # baseurl = os.getcwd()
+  target = os.path.join(os.getcwd(), 'target')
+  os.makedirs(target, exist_ok=True)
+
+  def render_pages(posts, href_fn, title_fn):
+    posts = list(posts)
+
+    pages = []
+    for i in range((len(posts) + (page_size - 1)) // page_size):
+      pages.append(Link(
+        title=f'{i + 1}',
+        href=href_fn(i),
+      ))
+
+    for i, page in enumerate(pager(posts, page_size)):
+      render_list(
+        os.path.join(target, href_fn(i)),
+        title=title_fn(i),
+        links=links,
+        pages=pages,
+        baseurl=target,
+        posts=page,
+        current_page=href_fn(i),
+      )
+
+  for name, posts in repos.items():
+    render_pages(
+      posts,
+      lambda i: f'{name}.html' if i == 0 else f'{name}-{i + 1}.html',
+      lambda i: f'/{name}' if i == 0 else f'/{name} #{i + 1}',
+    )
+
+  render_pages(
+    all_posts,
+    lambda i: 'index.html' if i == 0 else f'page-{i + 1}.html',
+    lambda i: '/' if i == 0 else f'/ #{i + 1}',
+  )
+
+  for post in all_posts:
+    filename = os.path.join(target, f'{post.hash}.html')
+    with open(filename, 'w') as fp:
+      fp.write(render(
+        'single.html',
+        title=post.title,
+        links=links,
+        baseurl=target,
+        post=post,
+      ))
+
+
+if __name__ == '__main__':
+  render_all(sys.argv[1:])

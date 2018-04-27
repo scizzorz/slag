@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+
+  <article>
+    <header>
+      <a href="{{ baseurl }}/{{ post.hash }}.html">
+        {{ post.title }}
+      </a>
+    </header>
+
+    <span class="byline">
+      by <span class="author">{{ post.author.name }}</span>
+      in <span class="repo">
+        <a href="{{ baseurl }}/{{ post.repo }}.html">
+          /{{ post.repo }}
+        </a>
+      </span>
+      at <time>{{ post.time | datetime }}</time>
+    </span>
+
+    {{ post.body | markdown | safe }}
+  </article>
+
+{% endblock %}

@@ -1,0 +1,4 @@
+pygit2==0.24.2
+jinja2
+markdown2
+attrs
