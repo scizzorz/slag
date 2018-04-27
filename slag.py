@@ -95,7 +95,13 @@ def render_list(filename, **kwargs):
     ))
 
 
-def render_all(paths=['.'], page_size=16):
+def render_all(paths=['.'], page_size=16, baseurl=None, target=None):
+  if baseurl is None:
+    baseurl = os.path.join(os.getcwd(), 'target')
+
+  if target is None:
+    target = os.path.join(os.getcwd(), 'target')
+
   links = []
   repos = {}
   all_posts = []
@@ -117,8 +123,6 @@ def render_all(paths=['.'], page_size=16):
 
   all_posts.sort(key=lambda x: x.time, reverse=True)
 
-  # baseurl = os.getcwd()
-  target = os.path.join(os.getcwd(), 'target')
   os.makedirs(target, exist_ok=True)
 
   def render_pages(posts, href_fn, title_fn):
@@ -137,7 +141,7 @@ def render_all(paths=['.'], page_size=16):
         title=title_fn(i),
         links=links,
         pages=pages,
-        baseurl=target,
+        baseurl=baseurl,
         posts=page,
         current_page=href_fn(i),
       )
@@ -162,7 +166,7 @@ def render_all(paths=['.'], page_size=16):
         'single.html',
         title=post.title,
         links=links,
-        baseurl=target,
+        baseurl=baseurl,
         post=post,
       ))
 
