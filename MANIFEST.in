@@ -1,0 +1,4 @@
+include LICENSE
+recursive-include css *.css
+recursive-include html *.html
+include requirements.txt
