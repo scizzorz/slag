@@ -1,4 +1,4 @@
 include LICENSE
-include css/*.css
-include html/*.html
+include slag/css/*.css
+include slag/html/*.html
 include requirements.txt
