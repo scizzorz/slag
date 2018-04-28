@@ -1,6 +1,6 @@
 {% if file.type == 'python' %}
   <strong>{{ file.path }}</strong>
-  <pre><code>{{ file.data.decode('utf-8') }}</code></pre>
+  {{ file.data.decode('utf-8') | pygment('python') | safe }}
 {% elif file.type == 'text' %}
   <strong>{{ file.path }}</strong>
   <pre><code>{{ file.data.decode('utf-8') }}</code></pre>

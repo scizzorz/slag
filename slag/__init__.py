@@ -5,6 +5,9 @@ import jinja2
 import markdown
 import os
 import pygit2 as git
+import pygments
+import pygments.lexers
+import pygments.formatters
 import shutil
 import sys
 import toml
@@ -30,8 +33,15 @@ def datetime_filter(src, fmt='%b %e, %I:%M%P'):
   return src.strftime(fmt)
 
 
+def pygment_filter(code, lexer_name):
+  lexer = pygments.lexers.get_lexer_by_name(lexer_name)
+  formatter = pygments.formatters.HtmlFormatter()
+  return pygments.highlight(code, lexer, formatter)
+
+
 env.filters['markdown'] = markdown_filter
 env.filters['datetime'] = datetime_filter
+env.filters['pygment'] = pygment_filter
 env.filters['is_file'] = lambda x: isinstance(x, File)
 
 
