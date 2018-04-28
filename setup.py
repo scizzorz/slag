@@ -4,7 +4,7 @@ import os
 
 setuptools.setup(
   name='slag',
-  version="0.1.12",
+  version="0.1.13",
   description='A distributed micro-blog social network on the block chain.',
   long_description=open('README.md').read().strip(),
   author='John Weachock',

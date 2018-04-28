@@ -7,6 +7,7 @@ import os
 import pygit2 as git
 import shutil
 import sys
+import toml
 
 slag_path, slag_file = os.path.split(__file__)
 html_path = os.path.join(slag_path, 'html')
@@ -98,8 +99,32 @@ def find_posts(path='.'):
 @click.option('--target', '-t', default=None, help='directory to dump rendered HTML')
 @click.option('--include', '-i', multiple=True, default=[], help='additional directory to include')
 @click.option('--pagesize', '-s', default=16, help='number of posts per page')
-@click.argument('paths', required=True, nargs=-1)
-def render_all(paths=['.'], pagesize=16, baseurl=None, target=None, include=[]):
+@click.option('--config', '-c', default=None, help='config file to load')
+@click.argument('paths', nargs=-1)
+def render_all(config, **kwargs):
+  # decide if the user gave us a config file or not
+  # if they did, we'll print errors loading it
+  # if not, we won't? seems reasonable to me
+  config_given = config is not None
+  if config is None:
+    config = 'slag.toml'
+
+  # load the config file and use it to update the kwargs
+  try:
+    with open(config) as fp:
+      kwargs.update(toml.load(fp))
+  except Exception as exc:
+    if config_given:
+      print(f'Error while reading {config!r}:')
+      print(f'  {exc}')
+
+  # get default kwargs
+  baseurl = kwargs.get('baseurl', None)
+  include = kwargs.get('include', [])
+  pagesize = kwargs.get('pagesize', 16)
+  paths = kwargs.get('paths', ['.'])
+  target = kwargs.get('target', None)
+
   if baseurl is None:
     baseurl = os.path.join(os.getcwd(), 'target')
 
