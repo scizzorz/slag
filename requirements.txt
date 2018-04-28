@@ -1,4 +1,5 @@
-pygit2==0.24.2
+pygit2
 jinja2
 markdown2
 attrs
+click

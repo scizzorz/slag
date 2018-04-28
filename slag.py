@@ -1,5 +1,6 @@
 from datetime import datetime
 import attr
+import click
 import jinja2
 import markdown2
 import os
@@ -27,11 +28,11 @@ env.filters['markdown'] = markdown_filter
 env.filters['datetime'] = datetime_filter
 
 
-def pager(iterable, page_size):
+def pager(iterable, pagesize):
     page = []
     for i, item in enumerate(iterable):
         page.append(item)
-        if ((i + 1) % page_size) == 0:
+        if ((i + 1) % pagesize) == 0:
             yield page
             page = []
     yield page
@@ -95,7 +96,12 @@ def render_list(filename, **kwargs):
     ))
 
 
-def render_all(paths=['.'], page_size=16, baseurl=None, target=None):
+@click.command()
+@click.option('--baseurl', default=None, help='base url for things')
+@click.option('--target', default=None, help='directory to dump rendered HTML')
+@click.option('--pagesize', default=16, help='number of posts per page')
+@click.argument('paths', required=True, nargs=-1)
+def render_all(paths=['.'], pagesize=16, baseurl=None, target=None):
   if baseurl is None:
     baseurl = os.path.join(os.getcwd(), 'target')
 
@@ -129,13 +135,13 @@ def render_all(paths=['.'], page_size=16, baseurl=None, target=None):
     posts = list(posts)
 
     pages = []
-    for i in range((len(posts) + (page_size - 1)) // page_size):
+    for i in range((len(posts) + (pagesize - 1)) // pagesize):
       pages.append(Link(
         title=f'{i + 1}',
         href=href_fn(i),
       ))
 
-    for i, page in enumerate(pager(posts, page_size)):
+    for i, page in enumerate(pager(posts, pagesize)):
       render_list(
         os.path.join(target, href_fn(i)),
         title=title_fn(i),
@@ -170,6 +176,5 @@ def render_all(paths=['.'], page_size=16, baseurl=None, target=None):
         post=post,
       ))
 
-
 if __name__ == '__main__':
-  render_all(sys.argv[1:])
+  render_all()
