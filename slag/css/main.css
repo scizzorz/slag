@@ -37,6 +37,13 @@ pre {
   font-family: "Fira Mono";
 }
 
+code {
+  border-radius: 0;
+  border-color: #474f56;
+  margin: 0;
+  background-color: #2d3338;
+}
+
 pre,
 blockquote,
 dl,
