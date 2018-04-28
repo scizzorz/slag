@@ -5,10 +5,15 @@ import jinja2
 import markdown2
 import os
 import pygit2 as git
+import shutil
 import sys
 
+slag_path, slag_file = os.path.split(__file__)
+html_path = os.path.join(slag_path, 'html')
+css_path = os.path.join(slag_path, 'css')
+
 env = jinja2.Environment(
-  loader=jinja2.FileSystemLoader('html'),
+  loader=jinja2.FileSystemLoader(html_path),
   autoescape=jinja2.select_autoescape(['html', 'xml']),
 )
 
@@ -89,16 +94,24 @@ def find_posts(path='.'):
 
 
 @click.command()
-@click.option('--baseurl', default=None, help='base url for things')
-@click.option('--target', default=None, help='directory to dump rendered HTML')
-@click.option('--pagesize', default=16, help='number of posts per page')
+@click.option('--baseurl', '-u', default=None, help='base url for things')
+@click.option('--target', '-t', default=None, help='directory to dump rendered HTML')
+@click.option('--include', '-i', multiple=True, default=[], help='additional directory to include')
+@click.option('--pagesize', '-s', default=16, help='number of posts per page')
 @click.argument('paths', required=True, nargs=-1)
-def render_all(paths=['.'], pagesize=16, baseurl=None, target=None):
+def render_all(paths=['.'], pagesize=16, baseurl=None, target=None, include=[]):
   if baseurl is None:
     baseurl = os.path.join(os.getcwd(), 'target')
 
   if target is None:
     target = os.path.join(os.getcwd(), 'target')
+
+  include = list(include) + [css_path]
+  for path in include:
+    target_path = os.path.join(target, os.path.basename(path))
+    if os.path.exists(target_path):
+      shutil.rmtree(target_path)
+    shutil.copytree(path, target_path)
 
   links = []
   repos = {}
