@@ -44,6 +44,10 @@ code {
   background-color: #2d3338;
 }
 
+pre > code {
+  padding: 0.2rem 0.5rem;
+}
+
 pre,
 blockquote,
 dl,

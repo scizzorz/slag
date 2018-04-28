@@ -53,12 +53,26 @@ class Post:
   time = attr.ib()
   author = attr.ib()
   hash = attr.ib()
+  new_files = attr.ib()
 
 
 @attr.s
 class Link:
   title = attr.ib()
   href = attr.ib()
+
+
+@attr.s
+class File:
+  path = attr.ib()
+  data = attr.ib()
+
+  @property
+  def type(self):
+    if self.path.endswith('.py'):
+      return 'python'
+
+    return 'text'
 
 
 def render(name, *args, **kwargs):
@@ -77,6 +91,30 @@ def find_posts(path='.'):
     intro = ''
     body = ''
 
+    # new_files is a list of brand new files found in this commit (I hope)
+    new_files = []
+
+    # I don't know how to handle merges so I'm not
+    if len(commit.parents) == 0:
+      for entry in commit.tree:
+        obj = repo[entry.oid]
+        if obj.type == git.GIT_OBJ_BLOB:
+          new_files.append(File(
+            path=entry.name,
+            data=obj.data,
+          ))
+
+    elif len(commit.parents) == 1:
+      parent = commit.parents[0]
+      diff = parent.tree.diff_to_tree(commit.tree)
+      for delta in diff.deltas:
+        if delta.old_file.mode == 0:
+          obj = repo[delta.new_file.id]
+          new_files.append(File(
+            path=delta.new_file.path,
+            data=obj.data,
+          ))
+
     if len(paras) > 1:
       intro = paras[1]
       body = '\n\n'.join(paras[1:])
@@ -86,6 +124,7 @@ def find_posts(path='.'):
       intro=intro,
       body=body,
       author=commit.author,
+      new_files=new_files,
       time=commit.commit_time,
       repo=os.path.basename(os.path.abspath(path)),
       hash=commit.hex,

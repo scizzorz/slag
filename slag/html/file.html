@@ -1,0 +1,7 @@
+{% if file.type == 'python' %}
+  <strong>{{ file.path }}</strong>
+  <pre><code>{{ file.data.decode('utf-8') }}</code></pre>
+{% elif file.type == 'text' %}
+  <strong>{{ file.path }}</strong>
+  <pre><code>{{ file.data.decode('utf-8') }}</code></pre>
+{% endif %}

@@ -19,6 +19,10 @@
     </span>
 
     {{ post.body | markdown | safe }}
+
+    {% for file in post.new_files %}
+      {% include "file.html" %}
+    {% endfor %}
   </article>
 
 {% endblock %}
