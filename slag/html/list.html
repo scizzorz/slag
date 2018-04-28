@@ -20,7 +20,7 @@
 
       {{ post.intro | markdown | safe }}
 
-      {% if post.intro != post.body or post.new_files %}
+      {% if post.body | length > 1 %}
         <p>
           <a href="{{ baseurl }}/{{ post.hash }}.html" class="more">
             more...

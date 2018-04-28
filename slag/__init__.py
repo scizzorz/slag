@@ -32,6 +32,7 @@ def datetime_filter(src, fmt='%b %e, %I:%M%P'):
 
 env.filters['markdown'] = markdown_filter
 env.filters['datetime'] = datetime_filter
+env.filters['is_file'] = lambda x: isinstance(x, File)
 
 
 def pager(iterable, pagesize):
@@ -53,7 +54,6 @@ class Post:
   time = attr.ib()
   author = attr.ib()
   hash = attr.ib()
-  new_files = attr.ib()
 
 
 @attr.s
@@ -65,7 +65,12 @@ class Link:
 @attr.s
 class File:
   path = attr.ib()
-  data = attr.ib()
+  real_path = attr.ib()
+
+  @property
+  def data(self):
+    with open(self.real_path, 'rb') as fp:
+      return fp.read()
 
   @property
   def type(self):
@@ -74,6 +79,16 @@ class File:
 
     return 'text'
 
+
+def make_file(path, para):
+  if para.startswith('!file'):
+    file = para.split(maxsplit=1)[1].strip()
+    return File(
+      path=file,
+      real_path=os.path.abspath(os.path.join(path, file)),
+    )
+
+  return para
 
 def render(name, *args, **kwargs):
   temp = env.get_template(name)
@@ -89,42 +104,18 @@ def find_posts(path='.'):
     paras = commit.message.split('\n\n')
     title = paras[0]
     intro = ''
-    body = ''
-
-    # new_files is a list of brand new files found in this commit (I hope)
-    new_files = []
-
-    # I don't know how to handle merges so I'm not
-    if len(commit.parents) == 0:
-      for entry in commit.tree:
-        obj = repo[entry.oid]
-        if obj.type == git.GIT_OBJ_BLOB:
-          new_files.append(File(
-            path=entry.name,
-            data=obj.data,
-          ))
-
-    elif len(commit.parents) == 1:
-      parent = commit.parents[0]
-      diff = parent.tree.diff_to_tree(commit.tree)
-      for delta in diff.deltas:
-        if delta.old_file.mode == 0:
-          obj = repo[delta.new_file.id]
-          new_files.append(File(
-            path=delta.new_file.path,
-            data=obj.data,
-          ))
+    body = []
 
     if len(paras) > 1:
       intro = paras[1]
-      body = '\n\n'.join(paras[1:])
+      body = [make_file(path, para) for para in paras[1:]]
+      #body = '\n\n'.join(paras[1:])
 
     posts.append(Post(
       title=title,
       intro=intro,
       body=body,
       author=commit.author,
-      new_files=new_files,
       time=commit.commit_time,
       repo=os.path.basename(os.path.abspath(path)),
       hash=commit.hex,

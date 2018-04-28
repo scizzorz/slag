@@ -18,10 +18,13 @@
       at <time>{{ post.time | datetime }}</time>
     </span>
 
-    {{ post.body | markdown | safe }}
-
-    {% for file in post.new_files %}
-      {% include "file.html" %}
+    {% for para in post.body %}
+      {% if para | is_file %}
+        {% set file = para %}
+        {% include "file.html" %}
+      {% else %}
+        {{ para | markdown | safe }}
+      {% endif %}
     {% endfor %}
   </article>
 
