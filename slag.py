@@ -119,7 +119,7 @@ def render_all(paths=['.'], pagesize=16, baseurl=None, target=None, include=[]):
 
   links.append(Link(
     title='/',
-    href='index.html',
+    href='',
   ))
 
   for path in paths:
@@ -136,7 +136,7 @@ def render_all(paths=['.'], pagesize=16, baseurl=None, target=None, include=[]):
 
   os.makedirs(target, exist_ok=True)
 
-  def render_pages(posts, href_fn, title_fn):
+  def render_pages(posts, filename_fn, href_fn, title_fn):
     posts = list(posts)
 
     pages = []
@@ -147,7 +147,7 @@ def render_all(paths=['.'], pagesize=16, baseurl=None, target=None, include=[]):
       ))
 
     for i, page in enumerate(pager(posts, pagesize)):
-      filename = os.path.join(target, href_fn(i))
+      filename = os.path.join(target, filename_fn(i))
       with open(filename, 'w') as fp:
         fp.write(render(
           'list.html',
@@ -163,12 +163,14 @@ def render_all(paths=['.'], pagesize=16, baseurl=None, target=None, include=[]):
     render_pages(
       posts,
       lambda i: f'{name}.html' if i == 0 else f'{name}-{i + 1}.html',
+      lambda i: f'{name}.html' if i == 0 else f'{name}-{i + 1}.html',
       lambda i: f'/{name}' if i == 0 else f'/{name} #{i + 1}',
     )
 
   render_pages(
     all_posts,
     lambda i: 'index.html' if i == 0 else f'page-{i + 1}.html',
+    lambda i: '' if i == 0 else f'page-{i + 1}.html',
     lambda i: '/' if i == 0 else f'/ #{i + 1}',
   )
 
