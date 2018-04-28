@@ -1,5 +1,5 @@
 attrs
 click
 jinja2
-markdown2
+markdown
 pygit2

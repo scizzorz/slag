@@ -2,7 +2,7 @@ from datetime import datetime
 import attr
 import click
 import jinja2
-import markdown2
+import markdown
 import os
 import pygit2 as git
 import shutil
@@ -19,7 +19,7 @@ env = jinja2.Environment(
 
 
 def markdown_filter(src):
-  return markdown2.markdown(src)
+  return markdown.markdown(src)
 
 
 def datetime_filter(src, fmt='%b %e, %I:%M%P'):
