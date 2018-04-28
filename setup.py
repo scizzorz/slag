@@ -4,7 +4,7 @@ import os
 
 setuptools.setup(
   name='slag',
-  version="0.1.4",
+  version="0.1.5",
   description='A distributed micro-blog social network on the block chain.',
   long_description=open('README.md').read().strip(),
   author='John Weachock',
@@ -12,6 +12,9 @@ setuptools.setup(
   url='https://github.com/scizzorz/slag',
   py_modules=['slag'],
   scripts=['bin/slag'],
+  package_dir = {
+    'slag': './',
+  },
   package_data = {
     'slag': [
       'html/*.html',
