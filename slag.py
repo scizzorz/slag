@@ -88,14 +88,6 @@ def find_posts(path='.'):
   return posts
 
 
-def render_list(filename, **kwargs):
-  with open(filename, 'w') as fp:
-    fp.write(render(
-      'list.html',
-      **kwargs,
-    ))
-
-
 @click.command()
 @click.option('--baseurl', default=None, help='base url for things')
 @click.option('--target', default=None, help='directory to dump rendered HTML')
@@ -142,15 +134,17 @@ def render_all(paths=['.'], pagesize=16, baseurl=None, target=None):
       ))
 
     for i, page in enumerate(pager(posts, pagesize)):
-      render_list(
-        os.path.join(target, href_fn(i)),
-        title=title_fn(i),
-        links=links,
-        pages=pages,
-        baseurl=baseurl,
-        posts=page,
-        current_page=href_fn(i),
-      )
+      filename = os.path.join(target, href_fn(i))
+      with open(filename, 'w') as fp:
+        fp.write(render(
+          'list.html',
+          title=title_fn(i),
+          links=links,
+          pages=pages,
+          baseurl=baseurl,
+          posts=page,
+          current_page=href_fn(i),
+        ))
 
   for name, posts in repos.items():
     render_pages(
