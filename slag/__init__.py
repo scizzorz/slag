@@ -184,6 +184,3 @@ def render_all(paths=['.'], pagesize=16, baseurl=None, target=None, include=[]):
         baseurl=baseurl,
         post=post,
       ))
-
-if __name__ == '__main__':
-  render_all()
