@@ -21,22 +21,11 @@ env = jinja2.Environment(
 )
 
 
-def markdown_filter(src):
-  return markdown.markdown(src)
-
-
 def datetime_filter(src, fmt='%b %e, %I:%M%P'):
   if isinstance(src, int):
     src = datetime.fromtimestamp(src)
 
   return src.strftime(fmt)
-
-
-def pygment_filter(file):
-  code = file.data.decode('utf-8')
-  lexer = pygments.lexers.get_lexer_for_filename(os.path.basename(file.path))
-  formatter = pygments.formatters.HtmlFormatter()
-  return pygments.highlight(code, lexer, formatter)
 
 
 def text_render(src):
@@ -53,10 +42,7 @@ def text_render(src):
 
 
 env.filters['text'] = text_render
-env.filters['markdown'] = markdown_filter
 env.filters['datetime'] = datetime_filter
-env.filters['pygment'] = pygment_filter
-env.filters['is_code'] = lambda x: isinstance(x, Code)
 
 
 def pager(iterable, page_size):
@@ -97,7 +83,7 @@ class Code:
       return fp.read()
 
 
-def make_file(path, para):
+def magic(path, para):
   if para.startswith('!file') or para.startswith('!code'):
     file = para.split(maxsplit=1)[1].strip()
     return Code(
@@ -116,9 +102,14 @@ def make_file(path, para):
   return para
 
 
-def render(name, *args, **kwargs):
+def render_template(name, *args, **kwargs):
   temp = env.get_template(name)
   return temp.render(*args, **kwargs)
+
+
+def write_template(filename, template_name, *args, **kwargs):
+  with open(filename, 'w') as fp:
+    fp.write(render_template(template_name, *args, **kwargs))
 
 
 def find_posts(path='.'):
@@ -129,7 +120,7 @@ def find_posts(path='.'):
   for commit in repo.walk(last.id, git.GIT_SORT_TIME):
     paras = commit.message.split('\n\n')
     title = paras[0]
-    body = [make_file(path, para) for para in paras[1:]]
+    body = [magic(path, para) for para in paras[1:]]
 
     posts.append(Post(
       title=title,
@@ -182,6 +173,7 @@ def render_all(config, **kwargs):
   if target is None:
     target = os.path.join(os.getcwd(), 'target')
 
+  # copy all of the included paths to the target
   include = list(include) + [css_path]
   for path in include:
     target_path = os.path.join(target, os.path.basename(path))
@@ -224,17 +216,17 @@ def render_all(config, **kwargs):
 
     for i, page in enumerate(pager(posts, page_size)):
       filename = os.path.join(target, filename_fn(i))
-      with open(filename, 'w') as fp:
-        fp.write(render(
-          'list.html',
-          title=title_fn(i),
-          links=links,
-          pages=pages,
-          baseurl=baseurl,
-          posts=page,
-          current_page=href_fn(i),
-          max_paragraphs=max_paragraphs,
-        ))
+      write_template(
+        filename,
+        'list.html',
+        title=title_fn(i),
+        links=links,
+        pages=pages,
+        baseurl=baseurl,
+        posts=page,
+        current_page=href_fn(i),
+        max_paragraphs=max_paragraphs,
+      )
 
   for name, posts in repos.items():
     render_pages(
@@ -253,11 +245,11 @@ def render_all(config, **kwargs):
 
   for post in all_posts:
     filename = os.path.join(target, f'{post.hash}.html')
-    with open(filename, 'w') as fp:
-      fp.write(render(
-        'list.html',
-        title=post.title,
-        links=links,
-        baseurl=baseurl,
-        posts=[post],
-      ))
+    write_template(
+      filename,
+      'list.html',
+      title=post.title,
+      links=links,
+      baseurl=baseurl,
+      posts=[post],
+    )
