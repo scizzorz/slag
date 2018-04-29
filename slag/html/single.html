@@ -20,8 +20,8 @@
 
     {% for para in post.body -%}
       {% if para | is_file -%}
-        {% set file = para %}
-        {% include "file.html" %}
+        <strong>{{ para.path }}</strong>
+        {{ para | pygment | safe }}
       {%- else -%}
         {{ para | markdown | safe }}
       {%- endif %}

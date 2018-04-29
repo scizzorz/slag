@@ -33,8 +33,9 @@ def datetime_filter(src, fmt='%b %e, %I:%M%P'):
   return src.strftime(fmt)
 
 
-def pygment_filter(code, lexer_name):
-  lexer = pygments.lexers.get_lexer_by_name(lexer_name)
+def pygment_filter(file):
+  code = file.data.decode('utf-8')
+  lexer = pygments.lexers.get_lexer_for_filename(os.path.basename(file.path))
   formatter = pygments.formatters.HtmlFormatter()
   return pygments.highlight(code, lexer, formatter)
 
@@ -81,13 +82,6 @@ class File:
   def data(self):
     with open(self.real_path, 'rb') as fp:
       return fp.read()
-
-  @property
-  def type(self):
-    if self.path.endswith('.py'):
-      return 'python'
-
-    return 'text'
 
 
 def make_file(path, para):
