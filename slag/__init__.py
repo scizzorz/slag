@@ -59,11 +59,11 @@ env.filters['pygment'] = pygment_filter
 env.filters['is_code'] = lambda x: isinstance(x, Code)
 
 
-def pager(iterable, pagesize):
+def pager(iterable, page_size):
   page = []
   for i, item in enumerate(iterable):
     page.append(item)
-    if ((i + 1) % pagesize) == 0:
+    if ((i + 1) % page_size) == 0:
       yield page
       page = []
   yield page
@@ -148,6 +148,7 @@ def find_posts(path='.'):
 @click.option('--target', '-t', default=None, help='directory to dump rendered HTML')
 @click.option('--include', '-i', multiple=True, default=[], help='additional directory to include')
 @click.option('--pagesize', '-s', default=16, help='number of posts per page')
+@click.option('--maxparagraphs', '-g', default=1, help='number of paragraphs to display in lists')
 @click.option('--config', '-c', default=None, help='config file to load')
 @click.argument('paths', nargs=-1)
 def render_all(config, **kwargs):
@@ -170,9 +171,10 @@ def render_all(config, **kwargs):
   # get default kwargs
   baseurl = kwargs.get('baseurl', None)
   include = kwargs.get('include', [])
-  pagesize = kwargs.get('pagesize', 16)
+  page_size = kwargs.get('pagesize', 16)
   paths = kwargs.get('paths', ['.'])
   target = kwargs.get('target', None)
+  max_paragraphs = kwargs.get('maxparagraphs', 1)
 
   if baseurl is None:
     baseurl = os.path.join(os.getcwd(), 'target')
@@ -214,13 +216,13 @@ def render_all(config, **kwargs):
     posts = list(posts)
 
     pages = []
-    for i in range((len(posts) + (pagesize - 1)) // pagesize):
+    for i in range((len(posts) + (page_size - 1)) // page_size):
       pages.append(Link(
         title=f'{i + 1}',
         href=href_fn(i),
       ))
 
-    for i, page in enumerate(pager(posts, pagesize)):
+    for i, page in enumerate(pager(posts, page_size)):
       filename = os.path.join(target, filename_fn(i))
       with open(filename, 'w') as fp:
         fp.write(render(
@@ -231,6 +233,7 @@ def render_all(config, **kwargs):
           baseurl=baseurl,
           posts=page,
           current_page=href_fn(i),
+          max_paragraphs=max_paragraphs,
         ))
 
   for name, posts in repos.items():
@@ -252,9 +255,9 @@ def render_all(config, **kwargs):
     filename = os.path.join(target, f'{post.hash}.html')
     with open(filename, 'w') as fp:
       fp.write(render(
-        'single.html',
+        'list.html',
         title=post.title,
         links=links,
         baseurl=baseurl,
-        post=post,
+        posts=[post],
       ))
