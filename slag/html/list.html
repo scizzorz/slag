@@ -3,7 +3,7 @@
   {% for post in posts %}
     <article>
       <header>
-        <a href="{{ baseurl }}/{{ post.hash }}.html">
+        <a href="{{ baseurl }}/{{ post.hash }}{{ href_suffix }}">
           {{ post.title }}
         </a>
       </header>
@@ -11,7 +11,7 @@
       <span class="byline">
         by <span class="author">{{ post.author.name }}</span>
         in <span class="repo">
-          <a href="{{ baseurl }}/{{ post.repo }}.html">
+          <a href="{{ baseurl }}/{{ post.repo }}{{ href_suffix }}">
             /{{ post.repo }}
           </a>
         </span>
@@ -26,7 +26,7 @@
 
           {% if post.body | length > max_paragraphs -%}
             <p>
-              <a href="{{ baseurl }}/{{ post.hash }}.html" class="more">
+              <a href="{{ baseurl }}/{{ post.hash }}{{ href_suffix }}" class="more">
                 more...
               </a>
             </p>
