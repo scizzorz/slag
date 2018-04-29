@@ -74,7 +74,6 @@ class Post:
   repo = attr.ib()
   title = attr.ib()
   body = attr.ib()
-  intro = attr.ib()
   time = attr.ib()
   author = attr.ib()
   hash = attr.ib()
@@ -130,16 +129,10 @@ def find_posts(path='.'):
   for commit in repo.walk(last.id, git.GIT_SORT_TIME):
     paras = commit.message.split('\n\n')
     title = paras[0]
-    intro = ''
-    body = []
-
-    if len(paras) > 1:
-      intro = paras[1]
-      body = [make_file(path, para) for para in paras[1:]]
+    body = [make_file(path, para) for para in paras[1:]]
 
     posts.append(Post(
       title=title,
-      intro=intro,
       body=body,
       author=commit.author,
       time=commit.commit_time,
