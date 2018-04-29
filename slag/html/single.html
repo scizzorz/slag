@@ -19,9 +19,13 @@
     </span>
 
     {% for para in post.body -%}
-      {% if para | is_file -%}
-        <strong>{{ para.path }}</strong>
-        {{ para | pygment | safe }}
+      {% if para | is_code -%}
+        {% if para.is_markdown -%}
+          {{ para.data.decode('utf-8') | markdown | safe }}
+        {%- else -%}
+          <strong>{{ para.path }}</strong>
+          {{ para | pygment | safe }}
+        {%- endif %}
       {%- else -%}
         {{ para | markdown | safe }}
       {%- endif %}

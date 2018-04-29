@@ -43,7 +43,7 @@ def pygment_filter(file):
 env.filters['markdown'] = markdown_filter
 env.filters['datetime'] = datetime_filter
 env.filters['pygment'] = pygment_filter
-env.filters['is_file'] = lambda x: isinstance(x, File)
+env.filters['is_code'] = lambda x: isinstance(x, Code)
 
 
 def pager(iterable, pagesize):
@@ -74,9 +74,10 @@ class Link:
 
 
 @attr.s
-class File:
+class Code:
   path = attr.ib()
   real_path = attr.ib()
+  is_markdown = attr.ib(default=False)
 
   @property
   def data(self):
@@ -85,11 +86,19 @@ class File:
 
 
 def make_file(path, para):
-  if para.startswith('!file'):
+  if para.startswith('!file') or para.startswith('!code'):
     file = para.split(maxsplit=1)[1].strip()
-    return File(
+    return Code(
       path=file,
       real_path=os.path.abspath(os.path.join(path, file)),
+    )
+
+  if para.startswith('!md'):
+    file = para.split(maxsplit=1)[1].strip()
+    return Code(
+      path=file,
+      real_path=os.path.abspath(os.path.join(path, file)),
+      is_markdown=True,
     )
 
   return para
