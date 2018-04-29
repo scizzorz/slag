@@ -18,15 +18,27 @@
         at <time>{{ post.time | datetime }}</time>
       </span>
 
-      {{ post.intro | markdown | safe }}
+      {% if max_paragraphs -%}
 
-      {% if post.intro != post.body %}
-        <p>
-          <a href="{{ baseurl }}/{{ post.hash }}.html" class="more">
-            more...
-          </a>
-        </p>
-      {% endif %}
+        {% for para in post.body[:max_paragraphs] -%}
+          {{ para | text | safe }}
+          {%- endfor %}
+
+          {% if post.body | length > max_paragraphs -%}
+            <p>
+              <a href="{{ baseurl }}/{{ post.hash }}.html" class="more">
+                more...
+              </a>
+            </p>
+          {%- endif %}
+
+      {%- else -%}
+
+        {% for para in post.body -%}
+          {{ para | text | safe }}
+        {%- endfor %}
+
+      {%- endif %}
     </article>
   {% endfor %}
 {% endblock %}

@@ -5,8 +5,10 @@ import jinja2
 import markdown
 import os
 import pygit2 as git
+import pygments
+import pygments.formatters
+import pygments.lexers
 import shutil
-import sys
 import toml
 
 slag_path, slag_file = os.path.split(__file__)
@@ -19,37 +21,11 @@ env = jinja2.Environment(
 )
 
 
-def markdown_filter(src):
-  return markdown.markdown(src)
-
-
-def datetime_filter(src, fmt='%b %e, %I:%M%P'):
-  if isinstance(src, int):
-    src = datetime.fromtimestamp(src)
-
-  return src.strftime(fmt)
-
-
-env.filters['markdown'] = markdown_filter
-env.filters['datetime'] = datetime_filter
-
-
-def pager(iterable, pagesize):
-    page = []
-    for i, item in enumerate(iterable):
-        page.append(item)
-        if ((i + 1) % pagesize) == 0:
-            yield page
-            page = []
-    yield page
-
-
 @attr.s
 class Post:
   repo = attr.ib()
   title = attr.ib()
   body = attr.ib()
-  intro = attr.ib()
   time = attr.ib()
   author = attr.ib()
   hash = attr.ib()
@@ -61,12 +37,98 @@ class Link:
   href = attr.ib()
 
 
-def render(name, *args, **kwargs):
+@attr.s
+class Code:
+  path = attr.ib()
+  real_path = attr.ib()
+  is_markdown = attr.ib(default=False)
+
+  @property
+  def data(self):
+    with open(self.real_path, 'rb') as fp:
+      return fp.read()
+
+
+def datetime_filter(src, fmt='%b %e, %I:%M%P'):
+  '''Convert a datetime into a human-readable string.'''
+
+  if isinstance(src, int):
+    src = datetime.fromtimestamp(src)
+
+  return src.strftime(fmt)
+
+
+def text_render(src):
+  '''Render a paragraph as markdown or an embedded file.'''
+
+  if isinstance(src, Code):
+    code = src.data.decode('utf-8')
+    if src.is_markdown:
+      return markdown.markdown(code)
+
+    lexer = pygments.lexers.get_lexer_for_filename(os.path.basename(src.path))
+    formatter = pygments.formatters.HtmlFormatter()
+    return f'<strong>{src.path}</strong>\n' + pygments.highlight(code, lexer, formatter)
+
+  return markdown.markdown(src)
+
+
+env.filters['text'] = text_render
+env.filters['datetime'] = datetime_filter
+
+
+def pager(iterable, page_size):
+  '''Slice an iterable into multiple pages, yielding each page as a list.'''
+
+  page = []
+  for i, item in enumerate(iterable):
+    page.append(item)
+    if ((i + 1) % page_size) == 0:
+      yield page
+      page = []
+  yield page
+
+
+def magic(path, para):
+  '''Decide if a paragraph is "magic" or not, ie whether it's an embedded file.
+
+  This could probably be done through a Python-Markdown extension, but...'''
+
+  if para.startswith('!file') or para.startswith('!code'):
+    file = para.split(maxsplit=1)[1].strip()
+    return Code(
+      path=file,
+      real_path=os.path.abspath(os.path.join(path, file)),
+    )
+
+  if para.startswith('!md'):
+    file = para.split(maxsplit=1)[1].strip()
+    return Code(
+      path=file,
+      real_path=os.path.abspath(os.path.join(path, file)),
+      is_markdown=True,
+    )
+
+  return para
+
+
+def render_template(name, *args, **kwargs):
+  '''Render a Jinja template.'''
+
   temp = env.get_template(name)
   return temp.render(*args, **kwargs)
 
 
-def find_posts(path='.'):
+def write_template(filename, template_name, *args, **kwargs):
+  '''Render a Jinja template and write the results to a file.'''
+
+  with open(filename, 'w') as fp:
+    fp.write(render_template(template_name, *args, **kwargs))
+
+
+def find_posts(path):
+  '''Return a list of posts from a given repository.'''
+
   repo = git.Repository(git.discover_repository(path))
 
   last = repo[repo.head.target]
@@ -74,16 +136,10 @@ def find_posts(path='.'):
   for commit in repo.walk(last.id, git.GIT_SORT_TIME):
     paras = commit.message.split('\n\n')
     title = paras[0]
-    intro = ''
-    body = ''
-
-    if len(paras) > 1:
-      intro = paras[1]
-      body = '\n\n'.join(paras[1:])
+    body = [magic(path, para) for para in paras[1:]]
 
     posts.append(Post(
       title=title,
-      intro=intro,
       body=body,
       author=commit.author,
       time=commit.commit_time,
@@ -99,6 +155,7 @@ def find_posts(path='.'):
 @click.option('--target', '-t', default=None, help='directory to dump rendered HTML')
 @click.option('--include', '-i', multiple=True, default=[], help='additional directory to include')
 @click.option('--pagesize', '-s', default=16, help='number of posts per page')
+@click.option('--maxparagraphs', '-g', default=1, help='number of paragraphs to display in lists')
 @click.option('--config', '-c', default=None, help='config file to load')
 @click.argument('paths', nargs=-1)
 def render_all(config, **kwargs):
@@ -121,16 +178,20 @@ def render_all(config, **kwargs):
   # get default kwargs
   baseurl = kwargs.get('baseurl', None)
   include = kwargs.get('include', [])
-  pagesize = kwargs.get('pagesize', 16)
+  page_size = kwargs.get('pagesize', 16)
   paths = kwargs.get('paths', ['.'])
   target = kwargs.get('target', None)
-
-  if baseurl is None:
-    baseurl = os.path.join(os.getcwd(), 'target')
+  max_paragraphs = kwargs.get('maxparagraphs', 1)
 
   if target is None:
     target = os.path.join(os.getcwd(), 'target')
 
+  if baseurl is None:
+    baseurl = target
+
+  os.makedirs(target, exist_ok=True)
+
+  # copy all of the included paths to the target
   include = list(include) + [css_path]
   for path in include:
     target_path = os.path.join(target, os.path.basename(path))
@@ -138,52 +199,62 @@ def render_all(config, **kwargs):
       shutil.rmtree(target_path)
     shutil.copytree(path, target_path)
 
-  links = []
+  nav = []
   repos = {}
-  all_posts = []
+  root = []
 
-  links.append(Link(
+  # root link
+  nav.append(Link(
     title='/',
     href='',
   ))
 
   for path in paths:
+    # add posts from this path to the repo list
     posts = find_posts(path)
     name = os.path.basename(os.path.abspath(path))
     repos[name] = posts
-    all_posts.extend(posts)
-    links.append(Link(
+
+    # ...and the root list
+    root.extend(posts)
+
+    # ...and then add this path to the link
+    nav.append(Link(
       title=f'/{name}',
       href=f'{name}.html',
     ))
 
-  all_posts.sort(key=lambda x: x.time, reverse=True)
+  # sort root in descending chronological order
+  root.sort(key=lambda x: x.time, reverse=True)
 
-  os.makedirs(target, exist_ok=True)
-
+  # helper function to paginate a list of posts
   def render_pages(posts, filename_fn, href_fn, title_fn):
     posts = list(posts)
 
+    # generate nav links for each page
     pages = []
-    for i in range((len(posts) + (pagesize - 1)) // pagesize):
+    for i in range((len(posts) + (page_size - 1)) // page_size):
       pages.append(Link(
         title=f'{i + 1}',
         href=href_fn(i),
       ))
 
-    for i, page in enumerate(pager(posts, pagesize)):
+    # generate HTML for each page
+    for i, page in enumerate(pager(posts, page_size)):
       filename = os.path.join(target, filename_fn(i))
-      with open(filename, 'w') as fp:
-        fp.write(render(
-          'list.html',
-          title=title_fn(i),
-          links=links,
-          pages=pages,
-          baseurl=baseurl,
-          posts=page,
-          current_page=href_fn(i),
-        ))
+      write_template(
+        filename,
+        'list.html',
+        title=title_fn(i),
+        nav=nav,
+        pages=pages,
+        baseurl=baseurl,
+        posts=page,
+        current_page=href_fn(i),
+        max_paragraphs=max_paragraphs,
+      )
 
+  # generate pages for each repo
   for name, posts in repos.items():
     render_pages(
       posts,
@@ -192,20 +263,22 @@ def render_all(config, **kwargs):
       lambda i: f'/{name}' if i == 0 else f'/{name} #{i + 1}',
     )
 
+  # generate pages for root
   render_pages(
-    all_posts,
+    root,
     lambda i: 'index.html' if i == 0 else f'page-{i + 1}.html',
     lambda i: '' if i == 0 else f'page-{i + 1}.html',
     lambda i: '/' if i == 0 else f'/ #{i + 1}',
   )
 
-  for post in all_posts:
+  # generate HTML for each individual post
+  for post in root:
     filename = os.path.join(target, f'{post.hash}.html')
-    with open(filename, 'w') as fp:
-      fp.write(render(
-        'single.html',
-        title=post.title,
-        links=links,
-        baseurl=baseurl,
-        post=post,
-      ))
+    write_template(
+      filename,
+      'list.html',
+      title=post.title,
+      nav=nav,
+      baseurl=baseurl,
+      posts=[post],
+    )

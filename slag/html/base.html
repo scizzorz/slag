@@ -7,19 +7,19 @@
     <link href="https://fonts.googleapis.com/css?family=Fira+Mono" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="{{ baseurl }}/css/normalize.css" media="screen">
     <link rel="stylesheet" type="text/css" href="{{ baseurl }}/css/skeleton.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="{{ baseurl }}/css/pygments.css" media="screen">
     <link rel="stylesheet" type="text/css" href="{{ baseurl }}/css/main.css" media="screen">
   </head>
 
   <body>
     <section class="container markdown-body">
       <nav id="main">
-        {% for link in links %}
+        {% for link in nav %}
           <a href="{{ baseurl }}/{{ link.href }}">{{ link.title }}</a>
         {% endfor %}
       </nav>
 
       {% block content %}
-        {{ content | markdown }}
       {% endblock %}
 
       {% if pages and pages | length > 1 %}

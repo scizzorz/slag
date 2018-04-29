@@ -44,6 +44,15 @@ code {
   background-color: #2d3338;
 }
 
+pre > code,
+.highlight pre {
+  padding: 0.2rem 0.5rem;
+}
+
+.highlight pre {
+  border: 1px solid #474F56;
+}
+
 pre,
 blockquote,
 dl,
