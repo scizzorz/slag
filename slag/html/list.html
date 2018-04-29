@@ -15,7 +15,7 @@
             /{{ post.repo }}
           </a>
         </span>
-        at <time>{{ post.time | datetime }}</time>
+        at <time>{{ post.time | datetime(date_fmt) }}</time>
       </span>
 
       {% if max_paragraphs -%}

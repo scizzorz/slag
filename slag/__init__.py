@@ -157,6 +157,7 @@ def find_posts(path):
 @click.option('--pagesize', '-s', default=16, help='number of posts per page')
 @click.option('--maxparagraphs', '-g', default=1, help='number of paragraphs to display in lists')
 @click.option('--hrefsuffix', '-x', default=True, is_flag=True, help='use .html suffix or nah')
+@click.option('--datefmt', '-d', default='%b %e, %I:%M%P', help='strftime format to use')
 @click.option('--config', '-c', default=None, help='config file to load')
 @click.argument('paths', nargs=-1)
 def render_all(config, **kwargs):
@@ -184,6 +185,7 @@ def render_all(config, **kwargs):
   target = kwargs.get('target', None)
   max_paragraphs = kwargs.get('maxparagraphs', 1)
   href_suffix = '.html' if kwargs.get('hrefsuffix', True) else ''
+  date_fmt = kwargs.get('datefmt', '%b %e, %I:%M%P')
 
   if target is None:
     target = os.path.join(os.getcwd(), 'target')
@@ -255,6 +257,7 @@ def render_all(config, **kwargs):
         current_page=href_fn(i),
         max_paragraphs=max_paragraphs,
         href_suffix=href_suffix,
+        date_fmt=date_fmt,
       )
 
   # generate pages for each repo
@@ -285,4 +288,5 @@ def render_all(config, **kwargs):
       baseurl=baseurl,
       posts=[post],
       href_suffix=href_suffix,
+      date_fmt=date_fmt,
     )
