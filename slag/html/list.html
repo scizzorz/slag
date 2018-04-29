@@ -18,7 +18,7 @@
         at <time>{{ post.time | datetime }}</time>
       </span>
 
-      {{ post.intro | markdown | safe }}
+      {{ post.intro | text | safe }}
 
       {% if post.body | length > 1 %}
         <p>

@@ -6,10 +6,9 @@ import markdown
 import os
 import pygit2 as git
 import pygments
-import pygments.lexers
 import pygments.formatters
+import pygments.lexers
 import shutil
-import sys
 import toml
 
 slag_path, slag_file = os.path.split(__file__)
@@ -40,6 +39,20 @@ def pygment_filter(file):
   return pygments.highlight(code, lexer, formatter)
 
 
+def text_render(src):
+  if isinstance(src, Code):
+    code = src.data.decode('utf-8')
+    if src.is_markdown:
+      return markdown.markdown(code)
+
+    lexer = pygments.lexers.get_lexer_for_filename(os.path.basename(src.path))
+    formatter = pygments.formatters.HtmlFormatter()
+    return f'<strong>{src.path}</strong>\n' + pygments.highlight(code, lexer, formatter)
+
+  return markdown.markdown(src)
+
+
+env.filters['text'] = text_render
 env.filters['markdown'] = markdown_filter
 env.filters['datetime'] = datetime_filter
 env.filters['pygment'] = pygment_filter
@@ -47,13 +60,13 @@ env.filters['is_code'] = lambda x: isinstance(x, Code)
 
 
 def pager(iterable, pagesize):
-    page = []
-    for i, item in enumerate(iterable):
-        page.append(item)
-        if ((i + 1) % pagesize) == 0:
-            yield page
-            page = []
-    yield page
+  page = []
+  for i, item in enumerate(iterable):
+    page.append(item)
+    if ((i + 1) % pagesize) == 0:
+      yield page
+      page = []
+  yield page
 
 
 @attr.s
@@ -103,6 +116,7 @@ def make_file(path, para):
 
   return para
 
+
 def render(name, *args, **kwargs):
   temp = env.get_template(name)
   return temp.render(*args, **kwargs)
@@ -122,7 +136,6 @@ def find_posts(path='.'):
     if len(paras) > 1:
       intro = paras[1]
       body = [make_file(path, para) for para in paras[1:]]
-      #body = '\n\n'.join(paras[1:])
 
     posts.append(Post(
       title=title,
