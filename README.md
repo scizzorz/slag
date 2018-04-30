@@ -63,7 +63,7 @@ immutable history feature.
 #### `!md`
 
 Like the `!file` extension, if a paragraph starts with `!md` and a file path,
-the paagraph is expanded to the contents of the given file and then rendered as
+the paragraph is expanded to the contents of the given file and then rendered as
 Markdown. Again, Slag uses the version of the file at its current `HEAD`,
 enabling you edit posts without having to change your URLs. However, the act of
 editing a file will require a commit to the repository, which will then be used
