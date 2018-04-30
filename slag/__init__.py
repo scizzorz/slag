@@ -151,14 +151,14 @@ def find_posts(path):
 
 
 @click.command()
-@click.option('--baseurl', '-u', default=None, help='base url for things')
-@click.option('--target', '-t', default=None, help='directory to dump rendered HTML')
-@click.option('--include', '-i', multiple=True, default=[], help='additional directory to include')
-@click.option('--pagesize', '-s', default=16, help='number of posts per page')
-@click.option('--maxparagraphs', '-g', default=1, help='number of paragraphs to display in lists')
-@click.option('--hrefsuffix', '-x', default=True, is_flag=True, help='use .html suffix or nah')
-@click.option('--datefmt', '-d', default='%b %e, %I:%M%P', help='strftime format to use')
-@click.option('--config', '-c', default=None, help='config file to load')
+@click.option('--baseurl', '-u', default=None, help='Base URL for all internal links')
+@click.option('--target', '-t', default=None, help='Directory to dump rendered HTML')
+@click.option('--include', '-i', multiple=True, default=[], help='Additional directories to include')
+@click.option('--pagesize', '-s', default=16, help='Number of posts to display per page')
+@click.option('--maxparagraphs', '-g', default=1, help='Number of preview paragraphs to display')
+@click.option('--hrefsuffix', '-x', default=True, is_flag=True, help='Remove .html suffix from internal links')
+@click.option('--datefmt', '-d', default='%b %e, %I:%M%P', help='Format to pass to strftime() for dates')
+@click.option('--config', '-c', default=None, help='Config TOML to load')
 @click.argument('paths', nargs=-1)
 def render_all(config, **kwargs):
   # decide if the user gave us a config file or not
