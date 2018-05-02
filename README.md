@@ -3,7 +3,7 @@
 A fresh, static microblog system based on
 [modern block chain technologies](https://git-scm.com).
 
-`slag` uses a list of Git repositories ("streams") to generate static HTML
+Slag uses a list of Git repositories ("streams") to generate static HTML
 files. The targeted serving platform is
 [GitHub Pages](https://pages.github.com), but you can serve them however you
 want. [Here](https://scizzorz.github.io) is an example slag
@@ -34,9 +34,10 @@ override the options specified in the config file. By default, a file named
 ## Streams
 
 Each source repository is used as a different "stream" of posts. Slag generates
-a "post" from each commit in the stream repositories. A chronologically
-descending list of posts is generated for each individual stream as well as a
-single combined list of all streams.
+a "post" from each commit in the stream repositories, except those that having
+a leading `!` in their commit message. A chronologically descending list of
+posts is generated for each individual stream as well as a single combined list
+of all streams.
 
 Each post pulls its author, timestamp, URL slug, title, and body from the
 commit information. The first line of the commit message is used as the post
@@ -65,9 +66,10 @@ immutable history feature.
 Like the `!file` extension, if a paragraph starts with `!md` and a file path,
 the paragraph is expanded to the contents of the given file and then rendered as
 Markdown. Again, Slag uses the version of the file at its current `HEAD`,
-enabling you edit posts without having to change your URLs. However, the act of
+enabling you edit posts without having to change your URLs. ~However, the act of
 editing a file will require a commit to the repository, which will then be used
-as a new post... so it's not a totally fool-proof workaround. Tough.
+as a new post... so it's not a totally fool-proof workaround. Tough.~ Fixed:
+give your edit commit a leading `!` and Slag will ignore it.
 
 ## Motivation
 
