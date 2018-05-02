@@ -41,7 +41,6 @@ class Link:
 class Code:
   path = attr.ib()
   real_path = attr.ib()
-  is_markdown = attr.ib(default=False)
 
   @property
   def data(self):
@@ -75,9 +74,6 @@ def text_render(src):
 
   if isinstance(src, Code):
     code = src.data.decode('utf-8')
-    if src.is_markdown:
-      return md(code)
-
     lexer = pygments.lexers.get_lexer_for_filename(os.path.basename(src.path))
     formatter = pygments.formatters.HtmlFormatter()
     return f'<strong>{src.path}</strong>\n' + pygments.highlight(code, lexer, formatter)
@@ -101,6 +97,16 @@ def pager(iterable, page_size):
   yield page
 
 
+def flatten(ls):
+  '''Flatten nested lists into a single list.'''
+
+  for k in ls:
+    if isinstance(k, (list, tuple)):
+      yield from flatten(k)
+    else:
+      yield k
+
+
 def magic(path, para):
   '''Decide if a paragraph is "magic" or not, ie whether it's an embedded file.
 
@@ -115,11 +121,9 @@ def magic(path, para):
 
   if para.startswith('!md'):
     file = para.split(maxsplit=1)[1].strip()
-    return Code(
-      path=file,
-      real_path=os.path.abspath(os.path.join(path, file)),
-      is_markdown=True,
-    )
+    with open(os.path.abspath(os.path.join(path, file))) as fp:
+      paras = fp.read().split('\n\n')
+      return [magic(path, para) for para in paras]
 
   return para
 
@@ -148,7 +152,8 @@ def find_posts(path):
   for commit in repo.walk(last.id, git.GIT_SORT_TIME):
     paras = commit.message.split('\n\n')
     title = paras[0]
-    body = [magic(path, para) for para in paras[1:]]
+
+    body = list(flatten([magic(path, para) for para in paras[1:]]))
 
     posts.append(Post(
       title=title,
