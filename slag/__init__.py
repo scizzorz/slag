@@ -61,16 +61,28 @@ def datetime_filter(src, fmt='%b %e, %I:%M%P'):
 def text_render(src):
   '''Render a paragraph as markdown or an embedded file.'''
 
+  def md(text):
+    return markdown.markdown(
+      text,
+      extensions=['markdown.extensions.codehilite'],
+      extension_configs={
+        'markdown.extensions.codehilite': {
+          'linenums': False,
+          'css_class': 'highlight',
+        },
+      },
+    )
+
   if isinstance(src, Code):
     code = src.data.decode('utf-8')
     if src.is_markdown:
-      return markdown.markdown(code)
+      return md(code)
 
     lexer = pygments.lexers.get_lexer_for_filename(os.path.basename(src.path))
     formatter = pygments.formatters.HtmlFormatter()
     return f'<strong>{src.path}</strong>\n' + pygments.highlight(code, lexer, formatter)
 
-  return markdown.markdown(src)
+  return md(src)
 
 
 env.filters['text'] = text_render
