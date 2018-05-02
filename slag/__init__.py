@@ -153,6 +153,9 @@ def find_posts(path):
     paras = commit.message.split('\n\n')
     title = paras[0]
 
+    if title[0] == '!':
+      continue
+
     body = list(flatten([magic(path, para) for para in paras[1:]]))
 
     posts.append(Post(
