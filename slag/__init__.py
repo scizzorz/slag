@@ -151,7 +151,7 @@ def find_posts(path):
   posts = []
   for commit in repo.walk(last.id, git.GIT_SORT_TIME):
     paras = commit.message.split('\n\n')
-    title = paras[0]
+    title = paras[0].strip()
 
     if title[0] == '!':
       continue
