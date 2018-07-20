@@ -3,7 +3,7 @@
 {% for post in posts %}
       <article>
         <header>
-          <a href="{{ baseurl }}/{{ post.hash }}{{ href_suffix }}">
+          <a href="{{ baseurl }}/{{ post.url }}{{ href_suffix }}">
             {{ post.title }}
           </a>
         </header>
@@ -25,7 +25,7 @@
 
         {% if post.body | length > max_paragraphs -%}
         <p>
-          <a href="{{ baseurl }}/{{ post.hash }}{{ href_suffix }}" class="more">
+          <a href="{{ baseurl }}/{{ post.url }}{{ href_suffix }}" class="more">
             more...
           </a>
         </p>

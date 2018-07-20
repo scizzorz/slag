@@ -29,6 +29,7 @@ class Post:
   time = attr.ib()
   author = attr.ib()
   hash = attr.ib()
+  url = attr.ib(default=None)
 
 
 @attr.s
@@ -233,6 +234,8 @@ def render_all(config, **kwargs):
     href='',
   ))
 
+  urls = set()
+
   for path in paths:
     # add posts from this path to the repo list
     posts = find_posts(path)
@@ -241,6 +244,14 @@ def render_all(config, **kwargs):
 
     # ...and the root list
     root.extend(posts)
+
+    # make a unique URL for this post
+    for post in sorted(posts, key=lambda x: x.time):
+      for k in range(1, len(post.hash)):
+        if post.hash[:k] not in urls:
+          post.url = post.hash[:k]
+          urls.add(post.url)
+          break
 
     # ...and then add this path to the link
     nav.append(Link(
@@ -300,8 +311,21 @@ def render_all(config, **kwargs):
   # generate HTML for each individual post
   for post in root:
     filename = os.path.join(target, f'{post.hash}.html')
+    short_filename = os.path.join(target, f'{post.url}.html')
+
     write_template(
       filename,
+      'list.html',
+      title=post.title,
+      nav=nav,
+      baseurl=baseurl,
+      posts=[post],
+      href_suffix=href_suffix,
+      date_fmt=date_fmt,
+    )
+
+    write_template(
+      short_filename,
       'list.html',
       title=post.title,
       nav=nav,
