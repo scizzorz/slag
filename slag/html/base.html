@@ -14,24 +14,24 @@
   <body>
     <section class="container markdown-body">
       <nav id="main">
-        {% for link in nav %}
-          <a href="{{ baseurl }}/{{ link.href }}">{{ link.title }}</a>
-        {% endfor %}
+        {%- for link in nav %}
+        <a href="{{ baseurl }}/{{ link.href }}">{{ link.title }}</a>
+        {%- endfor %}
       </nav>
 
-      {% block content %}
-      {% endblock %}
+      {%- block content -%}
+      {%- endblock -%}
 
-      {% if pages and pages | length > 1 %}
-        <nav id="pagination">
-          {% for page in pages %}
-            {% if page.href == current_page %}
-              <span class="current">{{ page.title }}</span>
-            {% else %}
-              <a href="{{ baseurl }}/{{ page.href }}">{{ page.title }}</a>
-            {% endif %}
-          {% endfor %}
-        </nav>
+      {%- if pages and pages | length > 1 %}
+      <nav id="pagination">
+        {%- for page in pages %}
+        {%- if page.href == current_page %}
+        <span class="current">{{ page.title }}</span>
+        {%- else %}
+        <a href="{{ baseurl }}/{{ page.href }}">{{ page.title }}</a>
+        {%- endif -%}
+        {%- endfor %}
+      </nav>
       {% endif %}
     </section>
   </body>

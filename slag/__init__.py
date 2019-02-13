@@ -9,6 +9,7 @@ import pygments
 import pygments.formatters
 import pygments.lexers
 import shutil
+import sys
 import toml
 
 slag_path, slag_file = os.path.split(__file__)
@@ -29,6 +30,7 @@ class Post:
   time = attr.ib()
   author = attr.ib()
   hash = attr.ib()
+  url = attr.ib(default=None)
 
 
 @attr.s
@@ -41,7 +43,6 @@ class Link:
 class Code:
   path = attr.ib()
   real_path = attr.ib()
-  is_markdown = attr.ib(default=False)
 
   @property
   def data(self):
@@ -61,16 +62,25 @@ def datetime_filter(src, fmt='%b %e, %I:%M%P'):
 def text_render(src):
   '''Render a paragraph as markdown or an embedded file.'''
 
+  def md(text):
+    return markdown.markdown(
+      text,
+      extensions=['markdown.extensions.codehilite'],
+      extension_configs={
+        'markdown.extensions.codehilite': {
+          'linenums': False,
+          'css_class': 'highlight',
+        },
+      },
+    )
+
   if isinstance(src, Code):
     code = src.data.decode('utf-8')
-    if src.is_markdown:
-      return markdown.markdown(code)
-
     lexer = pygments.lexers.get_lexer_for_filename(os.path.basename(src.path))
     formatter = pygments.formatters.HtmlFormatter()
     return f'<strong>{src.path}</strong>\n' + pygments.highlight(code, lexer, formatter)
 
-  return markdown.markdown(src)
+  return md(src)
 
 
 env.filters['text'] = text_render
@@ -89,6 +99,16 @@ def pager(iterable, page_size):
   yield page
 
 
+def flatten(ls):
+  '''Flatten nested lists into a single list.'''
+
+  for k in ls:
+    if isinstance(k, (list, tuple)):
+      yield from flatten(k)
+    else:
+      yield k
+
+
 def magic(path, para):
   '''Decide if a paragraph is "magic" or not, ie whether it's an embedded file.
 
@@ -103,11 +123,9 @@ def magic(path, para):
 
   if para.startswith('!md'):
     file = para.split(maxsplit=1)[1].strip()
-    return Code(
-      path=file,
-      real_path=os.path.abspath(os.path.join(path, file)),
-      is_markdown=True,
-    )
+    with open(os.path.abspath(os.path.join(path, file))) as fp:
+      paras = fp.read().split('\n\n')
+      return [magic(path, para) for para in paras]
 
   return para
 
@@ -126,24 +144,32 @@ def write_template(filename, template_name, *args, **kwargs):
     fp.write(render_template(template_name, *args, **kwargs))
 
 
-def find_posts(path):
-  '''Return a list of posts from a given repository.'''
+def find_repo(path):
+  '''Return the wrapping git repository for a path.'''
 
-  repo = git.Repository(git.discover_repository(path))
+  return git.Repository(git.discover_repository(path))
+
+
+def find_posts(repo):
+  '''Return a list of posts from a given repository.'''
 
   last = repo[repo.head.target]
   posts = []
   for commit in repo.walk(last.id, git.GIT_SORT_TIME):
     paras = commit.message.split('\n\n')
-    title = paras[0]
-    body = [magic(path, para) for para in paras[1:]]
+    title = paras[0].strip()
+
+    if title[0] == '!':
+      continue
+
+    body = list(flatten([magic(repo.workdir, para) for para in paras[1:]]))
 
     posts.append(Post(
       title=title,
       body=body,
       author=commit.author,
       time=commit.commit_time,
-      repo=os.path.basename(os.path.abspath(path)),
+      repo=os.path.basename(os.path.abspath(repo.workdir)),
       hash=commit.hex,
     ))
 
@@ -174,8 +200,9 @@ def render_all(config, **kwargs):
       kwargs.update(toml.load(fp))
   except Exception as exc:
     if config_given:
-      print(f'Error while reading {config!r}:')
+      click.echo(click.style('    error: ', fg='red') + 'unable to read config')
       print(f'  {exc}')
+      sys.exit(1)
 
   # get default kwargs
   baseurl = kwargs.get('baseurl', None)
@@ -213,14 +240,35 @@ def render_all(config, **kwargs):
     href='',
   ))
 
+  urls = set()
+
   for path in paths:
     # add posts from this path to the repo list
-    posts = find_posts(path)
-    name = os.path.basename(os.path.abspath(path))
+    click.echo(click.style('  reading: ', fg='blue') + path)
+    try:
+      repo = find_repo(path)
+    except KeyError:
+      click.echo(click.style('    error: ', fg='red') + 'unable to find git repository')
+      sys.exit(1)
+
+    posts = find_posts(repo)
+    name = os.path.basename(os.path.abspath(repo.workdir))
     repos[name] = posts
+
+    click.echo(click.style('    found: ', fg='green') + repo.workdir)
 
     # ...and the root list
     root.extend(posts)
+
+    # make a unique URL for this post
+    for post in sorted(posts, key=lambda x: x.time):
+      for k in range(1, len(post.hash)):
+        try_url = f'{post.repo}/{post.hash[:k]}'
+        if try_url not in urls:
+          post.url = try_url
+          urls.add(post.url)
+          click.echo(click.style('   adding: ', fg='yellow') + post.url)
+          break
 
     # ...and then add this path to the link
     nav.append(Link(
@@ -262,10 +310,12 @@ def render_all(config, **kwargs):
 
   # generate pages for each repo
   for name, posts in repos.items():
+    os.makedirs(os.path.join(target, name), exist_ok=True)
+
     render_pages(
       posts,
-      lambda i: f'{name}.html' if i == 0 else f'{name}-{i + 1}.html',
-      lambda i: f'{name}{href_suffix}' if i == 0 else f'{name}-{i + 1}{href_suffix}',
+      lambda i: f'{name}/index.html' if i == 0 else f'{name}/page-{i + 1}.html',
+      lambda i: f'{name}{href_suffix}' if i == 0 else f'{name}/page-{i + 1}{href_suffix}',
       lambda i: f'/{name}' if i == 0 else f'/{name} #{i + 1}',
     )
 
@@ -279,9 +329,10 @@ def render_all(config, **kwargs):
 
   # generate HTML for each individual post
   for post in root:
-    filename = os.path.join(target, f'{post.hash}.html')
+    short_filename = os.path.join(target, f'{post.url}.html')
+
     write_template(
-      filename,
+      short_filename,
       'list.html',
       title=post.title,
       nav=nav,

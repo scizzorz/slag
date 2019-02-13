@@ -1,44 +1,40 @@
 {% extends "base.html" %}
 {% block content %}
-  {% for post in posts %}
-    <article>
-      <header>
-        <a href="{{ baseurl }}/{{ post.hash }}{{ href_suffix }}">
-          {{ post.title }}
-        </a>
-      </header>
-
-      <span class="byline">
-        by <span class="author">{{ post.author.name }}</span>
-        in <span class="repo">
-          <a href="{{ baseurl }}/{{ post.repo }}{{ href_suffix }}">
-            /{{ post.repo }}
+{% for post in posts %}
+      <article>
+        <header>
+          <a href="{{ baseurl }}/{{ post.url }}{{ href_suffix }}">
+            {{ post.title }}
           </a>
+        </header>
+
+        <span class="byline">
+          by <span class="author">{{ post.author.name }}</span>
+          in <span class="repo">
+            <a href="{{ baseurl }}/{{ post.repo }}{{ href_suffix }}">
+              /{{ post.repo }}
+            </a>
+          </span>
+          at <time>{{ post.time | datetime(date_fmt) }}</time>
         </span>
-        at <time>{{ post.time | datetime(date_fmt) }}</time>
-      </span>
 
-      {% if max_paragraphs -%}
-
+        {% if max_paragraphs -%}
         {% for para in post.body[:max_paragraphs] -%}
-          {{ para | text | safe }}
-          {%- endfor %}
-
-          {% if post.body | length > max_paragraphs -%}
-            <p>
-              <a href="{{ baseurl }}/{{ post.hash }}{{ href_suffix }}" class="more">
-                more...
-              </a>
-            </p>
-          {%- endif %}
-
-      {%- else -%}
-
-        {% for para in post.body -%}
-          {{ para | text | safe }}
+        {{ para | text | safe }}
         {%- endfor %}
 
-      {%- endif %}
-    </article>
-  {% endfor %}
+        {% if post.body | length > max_paragraphs -%}
+        <p>
+          <a href="{{ baseurl }}/{{ post.url }}{{ href_suffix }}" class="more">
+            more...
+          </a>
+        </p>
+        {%- endif %}
+        {%- else -%}
+        {% for para in post.body -%}
+        {{ para | text | safe }}
+        {%- endfor %}
+        {%- endif %}
+      </article>
+{% endfor %}
 {% endblock %}

@@ -1,0 +1,18 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+attrs = "*"
+click = "*"
+jinja2 = "*"
+markdown = "*"
+pygments = "*"
+toml = "*"
+pygit2 = "==0.24.2"
+
+[requires]
+python_version = "3.6"
