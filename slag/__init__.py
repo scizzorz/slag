@@ -144,10 +144,14 @@ def write_template(filename, template_name, *args, **kwargs):
     fp.write(render_template(template_name, *args, **kwargs))
 
 
-def find_posts(path):
-  '''Return a list of posts from a given repository.'''
+def find_repo(path):
+  '''Return the wrapping git repository for a path.'''
 
-  repo = git.Repository(git.discover_repository(path))
+  return git.Repository(git.discover_repository(path))
+
+
+def find_posts(repo):
+  '''Return a list of posts from a given repository.'''
 
   last = repo[repo.head.target]
   posts = []
@@ -158,14 +162,14 @@ def find_posts(path):
     if title[0] == '!':
       continue
 
-    body = list(flatten([magic(path, para) for para in paras[1:]]))
+    body = list(flatten([magic(repo.workdir, para) for para in paras[1:]]))
 
     posts.append(Post(
       title=title,
       body=body,
       author=commit.author,
       time=commit.commit_time,
-      repo=os.path.basename(os.path.abspath(path)),
+      repo=os.path.basename(os.path.abspath(repo.workdir)),
       hash=commit.hex,
     ))
 
@@ -242,13 +246,16 @@ def render_all(config, **kwargs):
     # add posts from this path to the repo list
     click.echo(click.style('  reading: ', fg='blue') + path)
     try:
-      posts = find_posts(path)
+      repo = find_repo(path)
     except KeyError:
       click.echo(click.style('    error: ', fg='red') + 'unable to find git repository')
       sys.exit(1)
 
-    name = os.path.basename(os.path.abspath(path))
+    posts = find_posts(repo)
+    name = os.path.basename(os.path.abspath(repo.workdir))
     repos[name] = posts
+
+    click.echo(click.style('    found: ', fg='green') + repo.workdir)
 
     # ...and the root list
     root.extend(posts)
@@ -259,6 +266,7 @@ def render_all(config, **kwargs):
         if post.hash[:k] not in urls:
           post.url = post.hash[:k]
           urls.add(post.url)
+          click.echo(click.style('   adding: ', fg='yellow') + post.url)
           break
 
     # ...and then add this path to the link
