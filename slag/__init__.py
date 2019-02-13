@@ -196,8 +196,9 @@ def render_all(config, **kwargs):
       kwargs.update(toml.load(fp))
   except Exception as exc:
     if config_given:
-      print(f'Error while reading {config!r}:')
+      click.echo(click.style('    error: ', fg='red') + 'unable to read config')
       print(f'  {exc}')
+      sys.exit(1)
 
   # get default kwargs
   baseurl = kwargs.get('baseurl', None)
