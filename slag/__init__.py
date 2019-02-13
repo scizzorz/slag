@@ -9,6 +9,7 @@ import pygments
 import pygments.formatters
 import pygments.lexers
 import shutil
+import sys
 import toml
 
 slag_path, slag_file = os.path.split(__file__)
@@ -238,7 +239,13 @@ def render_all(config, **kwargs):
 
   for path in paths:
     # add posts from this path to the repo list
-    posts = find_posts(path)
+    click.echo(click.style('  reading: ', fg='blue') + path)
+    try:
+      posts = find_posts(path)
+    except KeyError:
+      click.echo(click.style('    error: ', fg='red') + 'unable to find git repository')
+      sys.exit(1)
+
     name = os.path.basename(os.path.abspath(path))
     repos[name] = posts
 
