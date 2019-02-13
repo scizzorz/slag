@@ -263,8 +263,9 @@ def render_all(config, **kwargs):
     # make a unique URL for this post
     for post in sorted(posts, key=lambda x: x.time):
       for k in range(1, len(post.hash)):
-        if post.hash[:k] not in urls:
-          post.url = post.hash[:k]
+        try_url = f'{post.repo}/{post.hash[:k]}'
+        if try_url not in urls:
+          post.url = try_url
           urls.add(post.url)
           click.echo(click.style('   adding: ', fg='yellow') + post.url)
           break
@@ -309,10 +310,12 @@ def render_all(config, **kwargs):
 
   # generate pages for each repo
   for name, posts in repos.items():
+    os.makedirs(os.path.join(target, name), exist_ok=True)
+
     render_pages(
       posts,
-      lambda i: f'{name}.html' if i == 0 else f'{name}-{i + 1}.html',
-      lambda i: f'{name}{href_suffix}' if i == 0 else f'{name}-{i + 1}{href_suffix}',
+      lambda i: f'{name}/index.html' if i == 0 else f'{name}/page-{i + 1}.html',
+      lambda i: f'{name}{href_suffix}' if i == 0 else f'{name}/page-{i + 1}{href_suffix}',
       lambda i: f'/{name}' if i == 0 else f'/{name} #{i + 1}',
     )
 
@@ -326,19 +329,7 @@ def render_all(config, **kwargs):
 
   # generate HTML for each individual post
   for post in root:
-    filename = os.path.join(target, f'{post.hash}.html')
     short_filename = os.path.join(target, f'{post.url}.html')
-
-    write_template(
-      filename,
-      'list.html',
-      title=post.title,
-      nav=nav,
-      baseurl=baseurl,
-      posts=[post],
-      href_suffix=href_suffix,
-      date_fmt=date_fmt,
-    )
 
     write_template(
       short_filename,
