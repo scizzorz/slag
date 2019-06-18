@@ -21,6 +21,7 @@ toml = "^0.10.0"
 pygit2 = "0.27.4"
 
 [tool.poetry.dev-dependencies]
+black = {version = "^18.3-alpha.0",allows-prereleases = true}
 
 [build-system]
 requires = ["poetry>=0.12"]
