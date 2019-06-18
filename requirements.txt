@@ -1,7 +1,0 @@
-attrs
-click
-jinja2
-markdown
-pygit2
-pygments
-toml
