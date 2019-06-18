@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "slag"
-version = "0.3.0"
+version = "0.4.0"
 description = "A distributed micro-blog social network on the blockchain."
 authors = ["John Weachock <jweachock@gmail.com>"]
 license = "MIT"
